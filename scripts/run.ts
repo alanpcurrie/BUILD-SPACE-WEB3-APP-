@@ -7,43 +7,31 @@
 import { ethers } from "hardhat";
 
 async function main() {
-  // Hardhat always runs the compile task when running scripts with its command
-  // line interface.
-  //
-  // If this script is run directly using `node` you may want to call compile
-  // manually to make sure everything is compiled
-  // await hre.run('compile');
-
-  // We get the contract to deploy
-  const [owner, randomPerson] = await ethers.getSigners();
   const waveContractFactory = await ethers.getContractFactory("WavePortal");
-  const waveContract = await waveContractFactory.deploy();
+  const waveContract = await waveContractFactory.deploy({
+    value: ethers.utils.parseEther("0.1"),
+  });
   await waveContract.deployed();
+  console.log("Contract addy:", waveContract.address);
 
-  console.log("Contract deployed to:", waveContract.address);
-  console.log("Contract deployed by:", owner.address);
+  let contractBalance = await ethers.provider.getBalance(waveContract.address);
+  console.log("Contract balance:", ethers.utils.formatEther(contractBalance));
 
-  let waveCount;
-  waveCount = await waveContract.getTotalWaves();
-
-  let waveTxn = await waveContract.wave();
+  /*
+   * Let's try two waves now
+   */
+  const waveTxn = await waveContract.wave("This is wave #1");
   await waveTxn.wait();
 
-  waveCount = await waveContract.getTotalWaves();
+  const waveTxn2 = await waveContract.wave("This is wave #2");
+  await waveTxn2.wait();
 
-  waveTxn = await waveContract.connect(randomPerson).wave();
-  await waveTxn.wait();
+  contractBalance = await ethers.provider.getBalance(waveContract.address);
+  console.log("Contract balance:", ethers.utils.formatEther(contractBalance));
 
-  waveCount = await waveContract.getTotalWaves();
-  return waveCount;
+  const allWaves = await waveContract.getAllWaves();
+  console.log(allWaves);
 }
-
-// We recommend this pattern to be able to use async/await everywhere
-// and properly handle errors.
-// main().catch((error) => {
-//   console.error(error);
-//   process.exitCode = 1;
-// });
 
 const runMain = async () => {
   try {
